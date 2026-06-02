@@ -1,0 +1,13 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  default:
+    deps:
+      - yatlc
+
+  yatlc:
+    dir: yatlc
+    cmds:
+      - cabal build

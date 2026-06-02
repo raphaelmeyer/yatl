@@ -1,0 +1,33 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "--- Root ---"
+    },
+    {
+      "path": "yatlc",
+      "name": "--- Compiler ---",
+    }
+  ],
+  "settings": {
+    "editor.renderWhitespace": "boundary",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "haskell.manageHLS": "GHCup",
+    "haskell.upgradeGHCup": false,
+    "haskell.toolchain": {
+      "cabal": "recommended",
+      "hls": "recommended",
+      "ghc": "recommended"
+    },
+    "[jsonc][json]": {
+      "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[yaml]": {
+      "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "[haskell]": {
+      "editor.inlayHints.enabled": "offUnlessPressed"
+    }
+  }
+}
