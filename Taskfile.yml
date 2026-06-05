@@ -2,12 +2,70 @@
 
 version: "3"
 
+vars:
+  POC_DIR: /tmp/foo
+
 tasks:
   default:
     deps:
-      - yatlc
+      - poc
 
   yatlc:
+    run: once
     dir: yatlc
     cmds:
       - cabal build
+
+  poc:
+    run: once
+    dir: yatlc
+    deps:
+      - poc:build
+    cmds:
+      - wasmtime run {{.POC_DIR}}/foo.component.wasm
+
+  poc:build:
+    run: once
+    dir: yatlc
+    deps:
+      - poc:compile
+      - poc:deps
+    cmds:
+      - wasm-tools component embed --world example:foo/foo {{.POC_DIR}} {{.POC_DIR}}/foo.wasm -o {{.POC_DIR}}/foo.embedded.wasm
+      - wasm-tools component new {{.POC_DIR}}/foo.embedded.wasm -o {{.POC_DIR}}/foo.component.wasm
+    sources:
+      - "{{.POC_DIR}}/foo.wasm"
+    generates:
+      - "{{.POC_DIR}}/foo.embedded.wasm"
+      - "{{.POC_DIR}}/foo.component.wasm"
+
+  poc:compile:
+    run: once
+    dir: yatlc
+    deps:
+      - yatlc
+    cmds:
+      - mkdir -p {{.POC_DIR}}
+      - cabal run
+
+  poc:debug:
+    run: once
+    dir: yatlc
+    deps:
+      - poc:build
+    cmds:
+      - wasm-tools validate --features component-model {{.POC_DIR}}/foo.component.wasm
+      - wasm-tools print {{.POC_DIR}}/foo.component.wasm
+
+  poc:deps:
+    run: once
+    dir: "{{ .POC_DIR }}"
+    cmds:
+      - mkdir -p {{.POC_DIR}}
+      - curl -L -O https://github.com/WebAssembly/WASI/releases/download/v0.2.12/wasi-wit-0.2.12.tar.gz
+      - tar zxf wasi-wit-0.2.12.tar.gz
+      - rm -rf {{.POC_DIR}}/deps
+      - mv wasi-wit-0.2.12 {{.POC_DIR}}/deps
+    status:
+      - test -f "{{ .POC_DIR }}/wasi-wit-0.2.12.tar.gz"
+      - test -f "{{ .POC_DIR }}/deps/cli/cli.wit"
