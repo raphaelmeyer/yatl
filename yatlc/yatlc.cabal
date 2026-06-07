@@ -41,6 +41,7 @@ executable yatlc
     build-depends:
         base ^>=4.18.3.0,
         bytestring,
+        filepath,
         text,
         yatlc
 

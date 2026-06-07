@@ -1,0 +1,20 @@
+version: "3"
+
+tasks:
+  ci:
+    run: once
+    deps:
+      - build
+      - test
+
+  build:
+    run: once
+    cmds:
+      - cabal build
+
+  test:
+    run: once
+    deps:
+      - build
+    cmds:
+      - cabal test
