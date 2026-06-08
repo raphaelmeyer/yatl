@@ -1,28 +1,25 @@
 module Main where
 
 import qualified Compiler.Compiler as Compiler
+import qualified Compiler.Options as CompOpts
 import Control.Applicative ((<**>))
 import qualified Options.Applicative as Options
 
-data Options = Options
-  { optWorkingDirectory :: FilePath,
-    optFile :: FilePath
-  }
-  deriving (Show)
-
-options :: Options.Parser Options
+options :: Options.Parser CompOpts.Options
 options =
-  Options
-    <$> ( Options.option Options.str $
-            Options.long "build-directory"
-              <> Options.short 'b'
-              <> Options.help "Directory for build artifacts"
-              <> Options.metavar "DIR"
-        )
-    <*> ( Options.argument Options.str $
-            Options.help "File to compile"
-              <> Options.metavar "FILE"
-        )
+  CompOpts.Options
+    <$> Options.option
+      Options.str
+      ( Options.long "build-directory"
+          <> Options.short 'b'
+          <> Options.help "Directory for build artifacts"
+          <> Options.metavar "DIR"
+      )
+    <*> Options.argument
+      Options.str
+      ( Options.help "File to compile"
+          <> Options.metavar "FILE"
+      )
 
 main :: IO ()
 main = do
@@ -36,4 +33,4 @@ main = do
           )
       )
 
-  Compiler.compileFile (optWorkingDirectory opts)
+  Compiler.compileFile opts
