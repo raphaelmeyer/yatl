@@ -32,7 +32,7 @@ tasks:
       - build-dir
     dir: ../yatlc
     cmds:
-      - cabal run yatlc -- ../poc/{{ .POC_DIR }}
+      - cabal run yatlc -- -b ../poc/{{ .POC_DIR }} ../poc/foo.yatl
 
   debug:
     run: once
