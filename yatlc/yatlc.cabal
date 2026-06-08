@@ -16,6 +16,7 @@ library
     import:           warnings
     exposed-modules:
         AST.AST
+        Compiler.Compiler
         Generator.Generator
         Parser.Error
         Parser.Parser
@@ -28,6 +29,7 @@ library
     build-depends:
         base ^>=4.18.3.0,
         bytestring,
+        filepath,
         mtl,
         text,
 
@@ -40,8 +42,6 @@ executable yatlc
 
     build-depends:
         base ^>=4.18.3.0,
-        bytestring,
-        filepath,
         optparse-applicative,
         text,
         yatlc
