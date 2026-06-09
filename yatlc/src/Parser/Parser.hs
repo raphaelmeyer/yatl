@@ -3,11 +3,20 @@ module Parser.Parser where
 import qualified AST.AST as AST
 import qualified Control.Monad.State.Strict as State
 import qualified Data.Text as Text
+import qualified Parser.Scanner as Scanner
+import qualified Parser.Token as Token
 
-data ParserState = ParserState
+newtype ParserState = ParserState
+  { pTokens :: [Token.Token]
+  }
 
 parse :: Text.Text -> AST.Tree
-parse _ = AST.Tree
+parse source = case Scanner.scan source of
+  Left _ -> AST.Tree []
+  Right tokens -> parseTokens tokens
+
+parseTokens :: [Token.Token] -> AST.Tree
+parseTokens tokens = AST.Tree $ State.evalState moduleDefinition (ParserState tokens)
 
 moduleDefinition :: State.State ParserState [AST.Function]
 moduleDefinition = do

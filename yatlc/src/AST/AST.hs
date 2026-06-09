@@ -1,5 +1,5 @@
 module AST.AST where
 
-data Tree = Tree
+newtype Tree = Tree [Function]
 
 data Function = Function
