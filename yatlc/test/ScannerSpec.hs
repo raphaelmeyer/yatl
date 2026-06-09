@@ -2,7 +2,7 @@
 
 module ScannerSpec (spec) where
 
-import qualified Parser.Error as Error
+import qualified Compiler.Error as Error
 import qualified Parser.Scanner as Scanner
 import qualified Parser.Token as Token
 import Test.Hspec

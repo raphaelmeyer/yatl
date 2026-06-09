@@ -33,4 +33,4 @@ main = do
           )
       )
 
-  Compiler.compileFile opts
+  Compiler.compile opts

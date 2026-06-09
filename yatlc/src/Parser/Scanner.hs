@@ -1,9 +1,9 @@
 module Parser.Scanner (scan, Result) where
 
+import qualified Compiler.Error as Error
 import qualified Control.Monad.State.Strict as State
 import qualified Data.Char as Char
 import qualified Data.Text as Text
-import qualified Parser.Error as Error
 import qualified Parser.Token as Token
 
 type Result = Either [Error.Error] [Token.Token]

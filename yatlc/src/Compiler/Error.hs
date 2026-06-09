@@ -1,4 +1,4 @@
-module Parser.Error where
+module Compiler.Error where
 
 import qualified Data.Text as Text
 

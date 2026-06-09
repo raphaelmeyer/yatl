@@ -17,9 +17,9 @@ library
     exposed-modules:
         AST.AST
         Compiler.Compiler
+        Compiler.Error
         Compiler.Options
         Generator.Generator
-        Parser.Error
         Parser.Parser
         Parser.Scanner
         Parser.Token
