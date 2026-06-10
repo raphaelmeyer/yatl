@@ -18,18 +18,27 @@ data Scanner = Scanner
 scan :: Text.Text -> Result
 scan source = scanToEnd (fromSource source)
 
-scanToken :: State.State Scanner (ScanResult Token.Token)
+scanToken :: State.State Scanner (ScanResult (Maybe Token.Token))
 scanToken = do
   maybeC <- advance
   case maybeC of
     Nothing -> eof
     Just c -> case c of
+      '{' -> simpleToken Token.LeftBrace
+      '}' -> simpleToken Token.RightBrace
       '(' -> simpleToken Token.LeftParen
       ')' -> simpleToken Token.RightParen
+      ' ' -> whitespace
+      '\n' -> whitespace
+      '\r' -> whitespace
+      '\t' -> whitespace
       _ -> unexpectedCharacter c
 
-simpleToken :: Token.Token -> State.State Scanner (ScanResult Token.Token)
-simpleToken = pure . Right
+simpleToken :: Token.Token -> State.State Scanner (ScanResult (Maybe Token.Token))
+simpleToken = pure . Right . Just
+
+whitespace :: State.State Scanner (ScanResult (Maybe Token.Token))
+whitespace = pure . Right $ Nothing
 
 advance :: State.State Scanner (Maybe Char.Char)
 advance = do
@@ -40,8 +49,8 @@ advance = do
       State.put s {scanSource = rest}
       pure $ Just c
 
-eof :: State.State Scanner (ScanResult Token.Token)
-eof = pure . Right $ Token.EOF
+eof :: State.State Scanner (ScanResult (Maybe Token.Token))
+eof = pure . Right $ Just Token.EOF
 
 atEnd :: Scanner -> Bool
 atEnd scanner = Text.length (scanSource scanner) == 0
@@ -58,7 +67,9 @@ scanToEnd scanner
       Right _ -> Left [err]
     handleToken token result = case result of
       Left errors -> Left errors
-      Right tokens -> Right (token : tokens)
+      Right tokens -> case token of
+        Just t -> Right (t : tokens)
+        Nothing -> Right tokens
 
 fromSource :: Text.Text -> Scanner
 fromSource source = Scanner source (Error.Location 1 1)

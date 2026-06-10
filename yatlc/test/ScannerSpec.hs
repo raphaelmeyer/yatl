@@ -15,9 +15,14 @@ spec = do
       result `shouldBe` Right [Token.EOF]
 
   describe "tokens" $ do
-    it "should return the parsed tokens" $ do
-      let result = Scanner.scan "()"
-      result `shouldBe` Right [Token.LeftParen, Token.RightParen, Token.EOF]
+    it "should return the parsed single character tokens" $ do
+      let result = Scanner.scan "({})"
+      result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.EOF]
+
+  describe "white space" $ do
+    it "should skip whitespace" $ do
+      let result = Scanner.scan "\t\r\n { (\n \n } \r ) \n"
+      result `shouldBe` Right [Token.LeftBrace, Token.LeftParen, Token.RightBrace, Token.RightParen, Token.EOF]
 
   describe "errors" $ do
     it "should catch unexpected characters" $ do
