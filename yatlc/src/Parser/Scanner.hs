@@ -29,7 +29,7 @@ scanToken = do
       '(' -> simpleToken Token.LeftParen
       ')' -> simpleToken Token.RightParen
       ' ' -> whitespace
-      '\n' -> whitespace
+      '\n' -> newLine
       '\r' -> whitespace
       '\t' -> whitespace
       _ -> unexpectedCharacter c
@@ -40,13 +40,18 @@ simpleToken = pure . Right . Just
 whitespace :: State.State Scanner (ScanResult (Maybe Token.Token))
 whitespace = pure . Right $ Nothing
 
+newLine :: State.State Scanner (ScanResult (Maybe Token.Token))
+newLine = do
+  State.modify (\s -> s {scanLocation = nextLine . scanLocation $ s})
+  pure . Right $ Nothing
+
 advance :: State.State Scanner (Maybe Char.Char)
 advance = do
   s <- State.get
   case Text.uncons (scanSource s) of
     Nothing -> pure Nothing
     Just (c, rest) -> do
-      State.put s {scanSource = rest}
+      State.put s {scanSource = rest, scanLocation = nextPosition (scanLocation s)}
       pure $ Just c
 
 eof :: State.State Scanner (ScanResult (Maybe Token.Token))
@@ -54,6 +59,12 @@ eof = pure . Right $ Just Token.EOF
 
 atEnd :: Scanner -> Bool
 atEnd scanner = Text.length (scanSource scanner) == 0
+
+nextPosition :: Error.Location -> Error.Location
+nextPosition location = location {Error.locPos = Error.locPos location + 1}
+
+nextLine :: Error.Location -> Error.Location
+nextLine location = Error.Location {Error.locPos = 0, Error.locLine = Error.locLine location + 1}
 
 scanToEnd :: Scanner -> Result
 scanToEnd scanner
@@ -72,7 +83,7 @@ scanToEnd scanner
         Nothing -> Right tokens
 
 fromSource :: Text.Text -> Scanner
-fromSource source = Scanner source (Error.Location 1 1)
+fromSource source = Scanner source (Error.Location {Error.locLine = 1, Error.locPos = 0})
 
 makeError :: Text.Text -> State.State Scanner (ScanResult a)
 makeError message = do
