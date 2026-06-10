@@ -28,6 +28,7 @@ scanToken = do
       '}' -> simpleToken Token.RightBrace
       '(' -> simpleToken Token.LeftParen
       ')' -> simpleToken Token.RightParen
+      '-' -> arrow
       ' ' -> whitespace
       '\n' -> newLine
       '\r' -> whitespace
@@ -37,6 +38,13 @@ scanToken = do
 simpleToken :: Token.Token -> State.State Scanner (ScanResult (Maybe Token.Token))
 simpleToken = pure . Right . Just
 
+arrow :: State.State Scanner (ScanResult (Maybe Token.Token))
+arrow = do
+  m <- match '>'
+  if m
+    then pure . Right . Just $ Token.Arrow
+    else unexpectedCharacter '-'
+
 whitespace :: State.State Scanner (ScanResult (Maybe Token.Token))
 whitespace = pure . Right $ Nothing
 
@@ -44,6 +52,15 @@ newLine :: State.State Scanner (ScanResult (Maybe Token.Token))
 newLine = do
   State.modify (\s -> s {scanLocation = nextLine . scanLocation $ s})
   pure . Right $ Nothing
+
+match :: Char.Char -> State.State Scanner Bool
+match m = do
+  s <- State.get
+  case Text.uncons (scanSource s) of
+    Just (next, rest) | next == m -> do
+      State.put s {scanSource = rest}
+      pure True
+    _ -> pure False
 
 advance :: State.State Scanner (Maybe Char.Char)
 advance = do

@@ -19,6 +19,10 @@ spec = do
       let result = Scanner.scan "({})"
       result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.EOF]
 
+    it "should parse composed tokens" $ do
+      let result = Scanner.scan "->"
+      result `shouldBe` Right [Token.Arrow, Token.EOF]
+
   describe "white space" $ do
     it "should skip whitespace" $ do
       let result = Scanner.scan "\t\r\n { (\n \n } \r ) \n"
