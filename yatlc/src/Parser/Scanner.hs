@@ -8,17 +8,30 @@ import qualified Parser.Token as Token
 
 type Result = Either [Error.Error] [Token.Token]
 
-type ScanResult a = Either Error.Error a
-
-data Scanner = Scanner
+data ScannerState = ScannerState
   { scanSource :: Text.Text,
-    scanLocation :: Error.Location
+    scanLocation :: Error.Location,
+    scanTokens :: [Token.Token],
+    scanErrors :: [Error.Error]
   }
 
-scan :: Text.Text -> Result
-scan source = scanToEnd (fromSource source)
+type Scanner a = State.State ScannerState a
 
-scanToken :: State.State Scanner (ScanResult (Maybe Token.Token))
+scan :: Text.Text -> Result
+scan source =
+  let s = State.execState scanToEnd (fromSource source)
+   in if null (scanErrors s)
+        then Right . reverse $ scanTokens s
+        else Left . reverse $ scanErrors s
+
+scanToEnd :: Scanner ()
+scanToEnd = do
+  s <- State.get
+  if atEnd s
+    then eof
+    else scanToken >> scanToEnd
+
+scanToken :: Scanner ()
 scanToken = do
   maybeC <- advance
   case maybeC of
@@ -35,25 +48,30 @@ scanToken = do
       '\t' -> whitespace
       _ -> unexpectedCharacter c
 
-simpleToken :: Token.Token -> State.State Scanner (ScanResult (Maybe Token.Token))
-simpleToken = pure . Right . Just
+simpleToken :: Token.Token -> Scanner ()
+simpleToken = emit
 
-arrow :: State.State Scanner (ScanResult (Maybe Token.Token))
+arrow :: Scanner ()
 arrow = do
   m <- match '>'
   if m
-    then pure . Right . Just $ Token.Arrow
+    then emit Token.Arrow
     else unexpectedCharacter '-'
 
-whitespace :: State.State Scanner (ScanResult (Maybe Token.Token))
-whitespace = pure . Right $ Nothing
+whitespace :: Scanner ()
+whitespace = skip
 
-newLine :: State.State Scanner (ScanResult (Maybe Token.Token))
+newLine :: Scanner ()
 newLine = do
   State.modify (\s -> s {scanLocation = nextLine . scanLocation $ s})
-  pure . Right $ Nothing
 
-match :: Char.Char -> State.State Scanner Bool
+emit :: Token.Token -> Scanner ()
+emit token = State.modify (\s -> s {scanTokens = token : scanTokens s})
+
+skip :: Scanner ()
+skip = pure ()
+
+match :: Char.Char -> Scanner Bool
 match m = do
   s <- State.get
   case Text.uncons (scanSource s) of
@@ -62,7 +80,7 @@ match m = do
       pure True
     _ -> pure False
 
-advance :: State.State Scanner (Maybe Char.Char)
+advance :: Scanner (Maybe Char.Char)
 advance = do
   s <- State.get
   case Text.uncons (scanSource s) of
@@ -71,11 +89,11 @@ advance = do
       State.put s {scanSource = rest, scanLocation = nextPosition (scanLocation s)}
       pure $ Just c
 
-eof :: State.State Scanner (ScanResult (Maybe Token.Token))
-eof = pure . Right $ Just Token.EOF
+eof :: Scanner ()
+eof = emit Token.EOF
 
-atEnd :: Scanner -> Bool
-atEnd scanner = Text.length (scanSource scanner) == 0
+atEnd :: ScannerState -> Bool
+atEnd scanner = Text.null (scanSource scanner)
 
 nextPosition :: Error.Location -> Error.Location
 nextPosition location = location {Error.locPos = Error.locPos location + 1}
@@ -83,29 +101,18 @@ nextPosition location = location {Error.locPos = Error.locPos location + 1}
 nextLine :: Error.Location -> Error.Location
 nextLine location = Error.Location {Error.locPos = 0, Error.locLine = Error.locLine location + 1}
 
-scanToEnd :: Scanner -> Result
-scanToEnd scanner
-  | atEnd scanner = Right [Token.EOF]
-  | otherwise = case State.runState scanToken scanner of
-      (Left err, scanner') -> handleError err (scanToEnd scanner')
-      (Right token, scanner') -> handleToken token (scanToEnd scanner')
-  where
-    handleError err result = case result of
-      Left errors -> Left (err : errors)
-      Right _ -> Left [err]
-    handleToken token result = case result of
-      Left errors -> Left errors
-      Right tokens -> case token of
-        Just t -> Right (t : tokens)
-        Nothing -> Right tokens
+fromSource :: Text.Text -> ScannerState
+fromSource source =
+  ScannerState
+    { scanSource = source,
+      scanLocation = (Error.Location {Error.locLine = 1, Error.locPos = 0}),
+      scanTokens = [],
+      scanErrors = []
+    }
 
-fromSource :: Text.Text -> Scanner
-fromSource source = Scanner source (Error.Location {Error.locLine = 1, Error.locPos = 0})
+unexpectedCharacter :: Char.Char -> Scanner ()
+unexpectedCharacter c = addError . Text.pack $ "Unexpected character '" ++ [c] ++ "'."
 
-makeError :: Text.Text -> State.State Scanner (ScanResult a)
-makeError message = do
-  s <- State.get
-  pure . Left $ Error.ScanError message (scanLocation s)
-
-unexpectedCharacter :: Char.Char -> State.State Scanner (ScanResult a)
-unexpectedCharacter c = makeError . Text.pack $ "Unexpected character '" ++ [c] ++ "'."
+addError :: Text.Text -> Scanner ()
+addError message = do
+  State.modify (\s -> s {scanErrors = Error.ScanError message (scanLocation s) : scanErrors s})
