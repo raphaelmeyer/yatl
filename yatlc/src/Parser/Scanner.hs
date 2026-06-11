@@ -41,12 +41,15 @@ scanToken = do
       '}' -> simpleToken Token.RightBrace
       '(' -> simpleToken Token.LeftParen
       ')' -> simpleToken Token.RightParen
+      ';' -> simpleToken Token.Semicolon
       '-' -> arrow
       ' ' -> whitespace
       '\n' -> newLine
       '\r' -> whitespace
       '\t' -> whitespace
-      _ -> unexpectedCharacter c
+      _ -> case letter c of
+        Alpha -> identifier c
+        _ -> unexpectedCharacter c
 
 simpleToken :: Token.Token -> Scanner ()
 simpleToken = emit
@@ -64,6 +67,25 @@ whitespace = skip
 newLine :: Scanner ()
 newLine = do
   State.modify (\s -> s {scanLocation = nextLine . scanLocation $ s})
+
+identifier :: Char.Char -> Scanner ()
+identifier first = do
+  remaining <- alphaNumeric
+  let ident = Text.cons first remaining
+  case Text.unpack ident of
+    "fn" -> emit Token.Function
+    "return" -> emit Token.Return
+    "void" -> emit Token.Void
+    _ -> emit $ Token.Identifier ident
+
+alphaNumeric :: Scanner Text.Text
+alphaNumeric = do
+  source <- State.gets scanSource
+  let (matched, remaining) = Text.break notAlphaNumeric source
+  State.modify (\s -> s {scanSource = remaining})
+  pure matched
+  where
+    notAlphaNumeric c = not ((Char.isAscii c && Char.isAlpha c) || Char.isDigit c)
 
 emit :: Token.Token -> Scanner ()
 emit token = State.modify (\s -> s {scanTokens = token : scanTokens s})
@@ -94,6 +116,14 @@ eof = emit Token.EOF
 
 atEnd :: ScannerState -> Bool
 atEnd scanner = Text.null (scanSource scanner)
+
+data LetterCategory = Alpha | Digit | Other
+
+letter :: Char.Char -> LetterCategory
+letter c
+  | Char.isAlpha c && Char.isAscii c = Alpha
+  | Char.isDigit c = Digit
+  | otherwise = Other
 
 nextPosition :: Error.Location -> Error.Location
 nextPosition location = location {Error.locPos = Error.locPos location + 1}

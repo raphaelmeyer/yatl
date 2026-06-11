@@ -14,14 +14,28 @@ spec = do
       let result = Scanner.scan ""
       result `shouldBe` Right [Token.EOF]
 
-  describe "tokens" $ do
-    it "should return the parsed single character tokens" $ do
-      let result = Scanner.scan "({})"
-      result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.EOF]
+  describe "symbols" $ do
+    it "should return the parsed single character symbol" $ do
+      let result = Scanner.scan "({});"
+      result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.Semicolon, Token.EOF]
 
-    it "should parse composed tokens" $ do
+    it "should parse composed symbols" $ do
       let result = Scanner.scan "->"
       result `shouldBe` Right [Token.Arrow, Token.EOF]
+
+  describe "keywords" $ do
+    it "should parse keywords" $ do
+      let result = Scanner.scan "fn return"
+      result `shouldBe` Right [Token.Function, Token.Return, Token.EOF]
+
+  describe "identifiers" $ do
+    it "should parse identifiers" $ do
+      let result = Scanner.scan "fn return void"
+      result `shouldBe` Right [Token.Function, Token.Return, Token.Void, Token.EOF]
+
+    it "should parse identifiers that include keywords as substrings" $ do
+      let result = Scanner.scan "noreturn func fnfn"
+      result `shouldBe` Right [Token.Identifier "noreturn", Token.Identifier "func", Token.Identifier "fnfn", Token.EOF]
 
   describe "white space" $ do
     it "should skip whitespace" $ do

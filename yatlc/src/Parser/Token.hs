@@ -4,15 +4,16 @@ import qualified Data.Text as Text
 
 data Token
   = -- Symbols
-    LeftParen
-  | RightParen
+    Arrow
   | LeftBrace
+  | LeftParen
   | RightBrace
-  | Arrow
+  | RightParen
   | Semicolon
   | -- Keywords
     Function
-  | Nil
+  | Return
+  | Void
   | -- Identifier/Literals
     Identifier Text.Text
   | --
