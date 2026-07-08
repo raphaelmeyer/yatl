@@ -10,37 +10,37 @@ import Test.Hspec
 spec :: Spec
 spec = do
   describe "empty string" $ do
-    it "should return eof token" $ do
+    it "should return an empty token list" $ do
       let result = Scanner.scan ""
-      result `shouldBe` Right [Token.EOF]
+      result `shouldBe` Right []
 
   describe "symbols" $ do
     it "should return the parsed single character symbol" $ do
       let result = Scanner.scan "({});"
-      result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.Semicolon, Token.EOF]
+      result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.Semicolon]
 
     it "should parse composed symbols" $ do
       let result = Scanner.scan "->"
-      result `shouldBe` Right [Token.Arrow, Token.EOF]
+      result `shouldBe` Right [Token.Arrow]
 
   describe "keywords" $ do
     it "should parse keywords" $ do
       let result = Scanner.scan "fn return"
-      result `shouldBe` Right [Token.Function, Token.Return, Token.EOF]
+      result `shouldBe` Right [Token.Function, Token.Return]
 
   describe "identifiers" $ do
     it "should parse identifiers" $ do
       let result = Scanner.scan "fn return void"
-      result `shouldBe` Right [Token.Function, Token.Return, Token.Void, Token.EOF]
+      result `shouldBe` Right [Token.Function, Token.Return, Token.Void]
 
     it "should parse identifiers that include keywords as substrings" $ do
       let result = Scanner.scan "noreturn func fnfn"
-      result `shouldBe` Right [Token.Identifier "noreturn", Token.Identifier "func", Token.Identifier "fnfn", Token.EOF]
+      result `shouldBe` Right [Token.Identifier "noreturn", Token.Identifier "func", Token.Identifier "fnfn"]
 
   describe "white space" $ do
     it "should skip whitespace" $ do
       let result = Scanner.scan "\t\r\n { (\n \n } \r ) \n"
-      result `shouldBe` Right [Token.LeftBrace, Token.LeftParen, Token.RightBrace, Token.RightParen, Token.EOF]
+      result `shouldBe` Right [Token.LeftBrace, Token.LeftParen, Token.RightBrace, Token.RightParen]
 
   describe "errors" $ do
     it "should catch unexpected characters" $ do

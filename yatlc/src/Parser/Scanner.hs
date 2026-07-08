@@ -28,14 +28,14 @@ scanToEnd :: Scanner ()
 scanToEnd = do
   s <- State.get
   if atEnd s
-    then eof
+    then pure ()
     else scanToken >> scanToEnd
 
 scanToken :: Scanner ()
 scanToken = do
   maybeC <- advance
   case maybeC of
-    Nothing -> eof
+    Nothing -> pure ()
     Just c -> case c of
       '{' -> simpleToken Token.LeftBrace
       '}' -> simpleToken Token.RightBrace
@@ -110,9 +110,6 @@ advance = do
     Just (c, rest) -> do
       State.put s {scanSource = rest, scanLocation = nextPosition (scanLocation s)}
       pure $ Just c
-
-eof :: Scanner ()
-eof = emit Token.EOF
 
 atEnd :: ScannerState -> Bool
 atEnd scanner = Text.null (scanSource scanner)
