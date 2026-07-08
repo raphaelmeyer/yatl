@@ -14,4 +14,6 @@ data Error
         eLocation :: Location
       }
   | ParseError
+      { eMessage :: Text.Text
+      }
   deriving (Eq, Show)

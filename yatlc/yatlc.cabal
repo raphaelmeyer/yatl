@@ -28,7 +28,7 @@ library
     -- other-extensions:
 
     build-depends:
-        base ^>=4.18.3.0,
+        base ^>=4.20,
         bytestring,
         filepath,
         mtl,
@@ -42,7 +42,7 @@ executable yatlc
     main-is:          Main.hs
 
     build-depends:
-        base ^>=4.18.3.0,
+        base ^>=4.20,
         optparse-applicative,
         text,
         yatlc
@@ -55,6 +55,7 @@ test-suite yatlc-test
     main-is: Spec.hs
 
     other-modules:
+        ParserSpec
         ScannerSpec
 
     build-depends:

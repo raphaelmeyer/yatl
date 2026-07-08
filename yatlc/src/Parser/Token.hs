@@ -16,6 +16,4 @@ data Token
   | Void
   | -- Identifier/Literals
     Identifier Text.Text
-  | --
-    EOF
   deriving (Eq, Show)
