@@ -28,3 +28,12 @@ jobs:
 
       - name: Run tests
         run: cabal test
+
+      - name: Build style tools
+        run: cabal build yatlc-style
+
+      - name: Lint
+        run: cabal exec -- hlint src app test
+
+      - name: Check formatting
+        run: cabal exec -- ormolu --mode check $(find src app test -name '*.hs')

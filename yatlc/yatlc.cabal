@@ -70,3 +70,13 @@ test-suite yatlc-test
     type: exitcode-stdio-1.0
     hs-source-dirs: test
     default-language: Haskell2010
+
+test-suite yatlc-style
+    type:             exitcode-stdio-1.0
+    main-is:          Style.hs
+    hs-source-dirs:   tools
+    default-language: Haskell2010
+    build-depends:    base
+    build-tool-depends:
+        ormolu:ormolu,
+        hlint:hlint

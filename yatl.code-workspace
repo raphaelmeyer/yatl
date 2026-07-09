@@ -27,7 +27,14 @@
       "editor.defaultFormatter": "redhat.vscode-yaml"
     },
     "[haskell]": {
-      "editor.inlayHints.enabled": "offUnlessPressed"
+      "editor.inlayHints.enabled": "offUnlessPressed",
+      "editor.defaultFormatter": "haskell.haskell"
     }
+  },
+  "extensions": {
+    "recommendations": [
+      "haskell.haskell",
+      "redhat.vscode-yaml",
+    ]
   }
 }

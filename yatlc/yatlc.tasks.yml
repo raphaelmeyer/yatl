@@ -6,6 +6,7 @@ tasks:
     deps:
       - build
       - test
+      - check
 
   build:
     run: once
@@ -18,3 +19,39 @@ tasks:
       - build
     cmds:
       - cabal test
+
+  check:
+    desc: Run all style checks (lint + format)
+    run: once
+    deps:
+      - lint
+      - format-check
+
+  lint:
+    desc: Run hlint and report issues (non-destructive)
+    run: once
+    deps:
+      - _tools
+    cmds:
+      - cabal exec -- hlint src app test
+
+  format-check:
+    desc: Check formatting without modifying files (for CI)
+    run: once
+    deps:
+      - _tools
+    cmds:
+      - cabal exec -- ormolu --mode check $(find src app test -name '*.hs')
+
+  format:
+    desc: Format all source files in-place
+    deps:
+      - _tools
+    cmds:
+      - cabal exec -- ormolu --mode inplace $(find src app test -name '*.hs')
+
+  _tools:
+    internal: true
+    run: once
+    cmds:
+      - cabal build yatlc-style

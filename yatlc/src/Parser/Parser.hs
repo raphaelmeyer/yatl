@@ -73,7 +73,7 @@ isToken :: Token.Token -> Token.Token -> Maybe ()
 isToken expected token = if token == expected then Just () else Nothing
 
 expectToken :: Token.Token -> Text.Text -> Parser ()
-expectToken expected message = expect (isToken expected) message
+expectToken expected = expect (isToken expected)
 
 raise :: Text.Text -> Parser a
 raise message = Parser $ \s -> (Left (Error.ParseError message), s)
