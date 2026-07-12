@@ -1,6 +1,7 @@
 module Parser.Scanner (scan, Result) where
 
 import qualified Compiler.Error as Error
+import qualified Compiler.Location as Location
 import qualified Control.Monad.State.Strict as State
 import qualified Data.Char as Char
 import qualified Data.Text as Text
@@ -10,7 +11,7 @@ type Result = Either [Error.Error] [Token.Token]
 
 data ScannerState = ScannerState
   { scanSource :: Text.Text,
-    scanLocation :: Error.Location,
+    scanLocation :: Location.Location,
     scanTokens :: [Token.Token],
     scanErrors :: [Error.Error]
   }
@@ -122,17 +123,17 @@ letter c
   | Char.isDigit c = Digit
   | otherwise = Other
 
-nextPosition :: Error.Location -> Error.Location
-nextPosition location = location {Error.locPos = Error.locPos location + 1}
+nextPosition :: Location.Location -> Location.Location
+nextPosition location = location {Location.locPos = Location.locPos location + 1}
 
-nextLine :: Error.Location -> Error.Location
-nextLine location = Error.Location {Error.locPos = 0, Error.locLine = Error.locLine location + 1}
+nextLine :: Location.Location -> Location.Location
+nextLine location = Location.Location {Location.locPos = 0, Location.locLine = Location.locLine location + 1}
 
 fromSource :: Text.Text -> ScannerState
 fromSource source =
   ScannerState
     { scanSource = source,
-      scanLocation = (Error.Location {Error.locLine = 1, Error.locPos = 0}),
+      scanLocation = (Location.Location {Location.locLine = 1, Location.locPos = 0}),
       scanTokens = [],
       scanErrors = []
     }
