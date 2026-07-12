@@ -18,6 +18,7 @@ library
         AST.AST
         Compiler.Compiler
         Compiler.Error
+        Compiler.Location
         Compiler.Options
         Generator.Generator
         Parser.Parser

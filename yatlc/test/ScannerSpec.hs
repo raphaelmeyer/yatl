@@ -3,6 +3,7 @@
 module ScannerSpec (spec) where
 
 import qualified Compiler.Error as Error
+import qualified Compiler.Location as Location
 import qualified Parser.Scanner as Scanner
 import qualified Parser.Token as Token
 import Test.Hspec
@@ -47,26 +48,26 @@ spec = do
       let result = Scanner.scan "@"
       result
         `shouldBe` Left
-          [ Error.ScanError "Unexpected character '@'." (Error.Location 1 1)
+          [ Error.ScanError "Unexpected character '@'." (Location.Location 1 1)
           ]
 
     it "should report correct position" $ do
       let result = Scanner.scan " ( ) @ { } "
       result
         `shouldBe` Left
-          [ Error.ScanError "Unexpected character '@'." (Error.Location 1 6)
+          [ Error.ScanError "Unexpected character '@'." (Location.Location 1 6)
           ]
 
     it "should report correct line" $ do
       let result = Scanner.scan "\n{\n}\n@\n\n"
       result
         `shouldBe` Left
-          [ Error.ScanError "Unexpected character '@'." (Error.Location 4 1)
+          [ Error.ScanError "Unexpected character '@'." (Location.Location 4 1)
           ]
 
     it "should report correct location" $ do
       let result = Scanner.scan "\r\t { \n } \n \r\t ( @ )\n\n"
       result
         `shouldBe` Left
-          [ Error.ScanError "Unexpected character '@'." (Error.Location 3 7)
+          [ Error.ScanError "Unexpected character '@'." (Location.Location 3 7)
           ]
