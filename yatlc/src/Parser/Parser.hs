@@ -4,6 +4,7 @@ module Parser.Parser where
 
 import qualified AST.AST as AST
 import qualified Compiler.Error as Error
+import qualified Compiler.Location as Location
 import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified Parser.Token as Token
@@ -11,7 +12,7 @@ import qualified Parser.Token as Token
 type Result = Either [Error.Error] AST.Tree
 
 data State = State
-  { psTokens :: [Token.Token],
+  { psTokens :: [Token.LocatedToken],
     psErrors :: [Error.Error]
   }
 
@@ -37,7 +38,7 @@ instance Monad Parser where
     (Left e, s') -> (Left e, s')
     (Right a, s') -> runParser (f a) s'
 
-parse :: [Token.Token] -> Result
+parse :: [Token.LocatedToken] -> Result
 parse tokens =
   let initialState = fromTokens tokens
       (result, finalState) = runParser moduleDefinition initialState
@@ -78,7 +79,7 @@ expectToken expected = expect (isToken expected)
 raise :: Text.Text -> Parser a
 raise message = Parser $ \s -> (Left (Error.ParseError message), s)
 
-advance :: Parser (Maybe Token.Token)
+advance :: Parser (Maybe Token.LocatedToken)
 advance = Parser $ \s -> case List.uncons (psTokens s) of
   Just (token, rest) -> (Right (Just token), s {psTokens = rest})
   Nothing -> (Right Nothing, s)
@@ -89,14 +90,14 @@ atEnd = Parser $ \s -> (Right (null (psTokens s)), s)
 expect :: (Token.Token -> Maybe a) -> Text.Text -> Parser a
 expect check message = do
   token <- advance
-  case token >>= check of
+  case token >>= check . Location.item of
     Just a -> pure a
     Nothing -> raise message
 
 match :: (Token.Token -> Maybe a) -> Parser (Maybe a)
 match check = Parser $ \state -> case psTokens state of
   [] -> (Right Nothing, state)
-  (token : rest) -> case check token of
+  (token : rest) -> case check . Location.item $ token of
     Just a -> (Right (Just a), state {psTokens = rest})
     Nothing -> (Right Nothing, state)
 
@@ -107,7 +108,7 @@ identifier :: Token.Token -> Maybe Text.Text
 identifier (Token.Identifier name) = Just name
 identifier _ = Nothing
 
-fromTokens :: [Token.Token] -> State
+fromTokens :: [Token.LocatedToken] -> State
 fromTokens tokens =
   State
     { psTokens = tokens,
