@@ -7,12 +7,12 @@ import qualified Data.Char as Char
 import qualified Data.Text as Text
 import qualified Parser.Token as Token
 
-type Result = Either [Error.Error] [Token.Token]
+type Result = Either [Error.Error] [Token.LocatedToken]
 
 data ScannerState = ScannerState
   { scanSource :: Text.Text,
     scanLocation :: Location.Location,
-    scanTokens :: [Token.Token],
+    scanTokens :: [Token.LocatedToken],
     scanErrors :: [Error.Error]
   }
 
@@ -89,7 +89,10 @@ alphaNumeric = do
     notAlphaNumeric c = not ((Char.isAscii c && Char.isAlpha c) || Char.isDigit c)
 
 emit :: Token.Token -> Scanner ()
-emit token = State.modify (\s -> s {scanTokens = token : scanTokens s})
+emit token = do
+  location <- State.gets scanLocation
+  let locatedToken = Location.Located token location
+  State.modify (\s -> s {scanTokens = locatedToken : scanTokens s})
 
 skip :: Scanner ()
 skip = pure ()

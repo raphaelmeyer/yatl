@@ -1,5 +1,6 @@
 module Parser.Token where
 
+import qualified Compiler.Location as Location
 import qualified Data.Text as Text
 
 data Token
@@ -17,3 +18,5 @@ data Token
   | -- Identifier/Literals
     Identifier Text.Text
   deriving (Eq, Show)
+
+type LocatedToken = Location.Located Token
