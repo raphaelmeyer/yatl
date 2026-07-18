@@ -9,6 +9,7 @@ data Error
         eLocation :: Location.Location
       }
   | ParseError
-      { eMessage :: Text.Text
+      { eMessage :: Text.Text,
+        eLocation :: Location.Location
       }
   deriving (Eq, Show)

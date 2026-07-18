@@ -58,7 +58,7 @@ moduleDefinition = do
       end <- atEnd
       if end
         then pure []
-        else raise "Unexpected token."
+        else currentToken >>= raise "Unexpected token."
 
 function :: Parser AST.Function
 function = do
@@ -80,8 +80,28 @@ isToken expected token = if token == expected then Just () else Nothing
 expectToken :: Token.Token -> Text.Text -> Parser ()
 expectToken expected = expect (isToken expected)
 
-raise :: Text.Text -> Parser a
-raise message = Parser $ \s -> (Left (Error.ParseError message), s)
+anyOf :: [Token.Token] -> Token.Token -> Maybe Token.Token
+anyOf tokens token = if token `elem` tokens then Just token else Nothing
+
+expect :: (Token.Token -> Maybe a) -> Text.Text -> Parser a
+expect check message = do
+  token <- advance
+  case token >>= check . Location.item of
+    Just a -> pure a
+    _ -> raise message token
+
+match :: (Token.Token -> Maybe a) -> Parser (Maybe a)
+match check = Parser $ \state -> case List.uncons . psTokens $ state of
+  Just (token, rest) -> case check . Location.item $ token of
+    Just a -> (Right (Just a), state {psTokens = rest})
+    Nothing -> (Right Nothing, state)
+  _ -> (Right Nothing, state)
+
+raise :: Text.Text -> Maybe Token.LocatedToken -> Parser a
+raise message (Just token) = Parser $
+  \state -> (Left (Error.ParseError message (Location.location token)), state)
+raise message Nothing = Parser $
+  \state -> (Left (Error.ParseError message (Location.Location 0 0)), state)
 
 advance :: Parser (Maybe Token.LocatedToken)
 advance = Parser $ \state -> case List.uncons . psTokens $ state of
@@ -93,23 +113,6 @@ atEnd = Parser $ \state -> case psTokens state of
   (Location.Located Token.Eof _ : _) -> (Right True, state)
   tokens -> (Right (null tokens), state)
 
-expect :: (Token.Token -> Maybe a) -> Text.Text -> Parser a
-expect check message = do
-  token <- advance
-  case token >>= check . Location.item of
-    Just a -> pure a
-    Nothing -> raise message
-
-match :: (Token.Token -> Maybe a) -> Parser (Maybe a)
-match check = Parser $ \state -> case psTokens state of
-  [] -> (Right Nothing, state)
-  (token : rest) -> case check . Location.item $ token of
-    Just a -> (Right (Just a), state {psTokens = rest})
-    Nothing -> (Right Nothing, state)
-
-anyOf :: [Token.Token] -> Token.Token -> Maybe Token.Token
-anyOf tokens token = if token `elem` tokens then Just token else Nothing
-
 currentToken :: Parser (Maybe Token.LocatedToken)
 currentToken =
   Parser $ \state -> case List.uncons . psTokens $ state of
@@ -117,8 +120,4 @@ currentToken =
     _ -> (Right Nothing, state)
 
 fromTokens :: [Token.LocatedToken] -> State
-fromTokens tokens =
-  State
-    { psTokens = tokens,
-      psErrors = []
-    }
+fromTokens tokens = State {psTokens = tokens, psErrors = []}

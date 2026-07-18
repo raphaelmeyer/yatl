@@ -56,7 +56,8 @@ test-suite yatlc-test
     main-is: Spec.hs
 
     other-modules:
-        ParserSpec
+        Parser.FunctionSpec
+        Parser.ModuleSpec
         ScannerSpec
 
     build-depends:

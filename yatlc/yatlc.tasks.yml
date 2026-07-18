@@ -23,9 +23,9 @@ tasks:
   check:
     desc: Run all style checks (lint + format)
     run: once
-    deps:
-      - lint
-      - format-check
+    cmds:
+      - task: lint
+      - task: format-check
 
   lint:
     desc: Run hlint and report issues (non-destructive)

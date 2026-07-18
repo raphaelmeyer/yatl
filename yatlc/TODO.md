@@ -1,4 +1,3 @@
 # TODO
 
-- add location to Tokens, concept how to do it nicely
-- add location to ParserError, adapt parser
+- fix handling and reporting of error location in scanner after the scanner supports more variations (-, ->, !, !=, ...)
