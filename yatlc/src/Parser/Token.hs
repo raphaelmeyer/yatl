@@ -17,6 +17,8 @@ data Token
   | Void
   | -- Identifier/Literals
     Identifier Text.Text
+  | -- End of input
+    Eof
   deriving (Eq, Show)
 
 type LocatedToken = Location.Located Token

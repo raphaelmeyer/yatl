@@ -70,6 +70,10 @@ function = do
   expectToken Token.RightBrace "Expect '}'."
   pure AST.Function
 
+identifier :: Token.Token -> Maybe Text.Text
+identifier (Token.Identifier name) = Just name
+identifier _ = Nothing
+
 isToken :: Token.Token -> Token.Token -> Maybe ()
 isToken expected token = if token == expected then Just () else Nothing
 
@@ -80,12 +84,14 @@ raise :: Text.Text -> Parser a
 raise message = Parser $ \s -> (Left (Error.ParseError message), s)
 
 advance :: Parser (Maybe Token.LocatedToken)
-advance = Parser $ \s -> case List.uncons (psTokens s) of
-  Just (token, rest) -> (Right (Just token), s {psTokens = rest})
-  Nothing -> (Right Nothing, s)
+advance = Parser $ \state -> case List.uncons . psTokens $ state of
+  Just (token, rest) -> (Right (Just token), state {psTokens = rest})
+  Nothing -> (Right Nothing, state)
 
 atEnd :: Parser Bool
-atEnd = Parser $ \s -> (Right (null (psTokens s)), s)
+atEnd = Parser $ \state -> case psTokens state of
+  (Location.Located Token.Eof _ : _) -> (Right True, state)
+  tokens -> (Right (null tokens), state)
 
 expect :: (Token.Token -> Maybe a) -> Text.Text -> Parser a
 expect check message = do
@@ -104,9 +110,11 @@ match check = Parser $ \state -> case psTokens state of
 anyOf :: [Token.Token] -> Token.Token -> Maybe Token.Token
 anyOf tokens token = if token `elem` tokens then Just token else Nothing
 
-identifier :: Token.Token -> Maybe Text.Text
-identifier (Token.Identifier name) = Just name
-identifier _ = Nothing
+currentToken :: Parser (Maybe Token.LocatedToken)
+currentToken =
+  Parser $ \state -> case List.uncons . psTokens $ state of
+    Just (token, _) -> (Right (Just token), state)
+    _ -> (Right Nothing, state)
 
 fromTokens :: [Token.LocatedToken] -> State
 fromTokens tokens =

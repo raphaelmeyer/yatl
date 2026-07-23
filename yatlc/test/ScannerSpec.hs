@@ -11,62 +11,74 @@ import Test.Hspec
 spec :: Spec
 spec = do
   describe "empty string" $ do
-    it "should return an empty token list" $ do
+    it "should return only an Eof token" $ do
       let result = Scanner.scan ""
-      result `shouldBe` Right []
+      result `shouldBe` Right [Location.Located Token.Eof (Location.Location 1 1)]
 
   describe "symbols" $ do
     it "should return the parsed single character symbol" $ do
       let result = map Location.item <$> Scanner.scan "({});"
-      result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.Semicolon]
+      result `shouldBe` Right [Token.LeftParen, Token.LeftBrace, Token.RightBrace, Token.RightParen, Token.Semicolon, Token.Eof]
 
     it "should parse composed symbols" $ do
       let result = map Location.item <$> Scanner.scan "->"
-      result `shouldBe` Right [Token.Arrow]
+      result `shouldBe` Right [Token.Arrow, Token.Eof]
 
   describe "keywords" $ do
     it "should parse keywords" $ do
       let result = map Location.item <$> Scanner.scan "fn return"
-      result `shouldBe` Right [Token.Function, Token.Return]
+      result `shouldBe` Right [Token.Function, Token.Return, Token.Eof]
 
   describe "identifiers" $ do
     it "should parse identifiers" $ do
-      let result = map Location.item <$> Scanner.scan "fn return void"
-      result `shouldBe` Right [Token.Function, Token.Return, Token.Void]
+      let result = map Location.item <$> Scanner.scan "some_identifier"
+      result `shouldBe` Right [Token.Identifier "some_identifier", Token.Eof]
 
     it "should parse identifiers that include keywords as substrings" $ do
       let result = map Location.item <$> Scanner.scan "noreturn func fnfn"
-      result `shouldBe` Right [Token.Identifier "noreturn", Token.Identifier "func", Token.Identifier "fnfn"]
+      result `shouldBe` Right [Token.Identifier "noreturn", Token.Identifier "func", Token.Identifier "fnfn", Token.Eof]
 
   describe "white space" $ do
     it "should skip whitespace" $ do
       let result = map Location.item <$> Scanner.scan "\t\r\n { (\n \n } \r ) \n"
-      result `shouldBe` Right [Token.LeftBrace, Token.LeftParen, Token.RightBrace, Token.RightParen]
+      result `shouldBe` Right [Token.LeftBrace, Token.LeftParen, Token.RightBrace, Token.RightParen, Token.Eof]
 
   describe "location information" $ do
     it "should assign position 1 to the first token on a line" $ do
       let result = map Location.location <$> Scanner.scan "{"
-      result `shouldBe` Right [Location.Location 1 1]
+      result `shouldBe` Right [Location.Location 1 1, Location.Location 1 2]
 
     it "should increment position for consecutive tokens" $ do
       let result = map Location.location <$> Scanner.scan "{}"
-      result `shouldBe` Right [Location.Location 1 1, Location.Location 1 2]
+      result `shouldBe` Right [Location.Location 1 1, Location.Location 1 2, Location.Location 1 3]
 
     it "should count whitespace characters in position" $ do
       let result = map Location.location <$> Scanner.scan "  {"
-      result `shouldBe` Right [Location.Location 1 3]
+      result `shouldBe` Right [Location.Location 1 3, Location.Location 1 4]
 
     it "should increment line on newline and reset position" $ do
-      let result = map Location.location <$> Scanner.scan "\n{"
-      result `shouldBe` Right [Location.Location 2 1]
+      let result = map Location.location <$> Scanner.scan "   \n{"
+      result `shouldBe` Right [Location.Location 2 1, Location.Location 2 2]
 
     it "should record the position of the first character of multi-character tokens" $ do
-      let result = map Location.location <$> Scanner.scan "->"
-      result `shouldBe` Right [Location.Location 1 1]
+      let result = map Location.location <$> Scanner.scan "  ->  "
+      result `shouldBe` Right [Location.Location 1 3, Location.Location 1 7]
+
+    it "should record the correct position after multi-character tokens" $ do
+      let result = map Location.location <$> Scanner.scan "  \n  ->  {"
+      result `shouldBe` Right [Location.Location 2 3, Location.Location 2 7, Location.Location 2 8]
 
     it "should record correct line and position" $ do
       let result = map Location.location <$> Scanner.scan "\n {"
-      result `shouldBe` Right [Location.Location 2 2]
+      result `shouldBe` Right [Location.Location 2 2, Location.Location 2 3]
+
+    it "should record correct position after keyword" $ do
+      let result = map Location.location <$> Scanner.scan " fn   foo "
+      result `shouldBe` Right [Location.Location 1 2, Location.Location 1 7, Location.Location 1 11]
+
+    it "should record correct position after identifier" $ do
+      let result = map Location.location <$> Scanner.scan "  foobar ; "
+      result `shouldBe` Right [Location.Location 1 3, Location.Location 1 10, Location.Location 1 12]
 
   describe "errors" $ do
     it "should catch unexpected characters" $ do
