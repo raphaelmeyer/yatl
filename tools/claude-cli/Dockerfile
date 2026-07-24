@@ -1,0 +1,40 @@
+FROM debian:trixie
+
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+ENV LANG=C.utf8 LC_ALL=C.utf8
+
+RUN groupadd -g "${USER_GID}" user \
+    && useradd -m -u "${USER_UID}" -g "${USER_GID}" -s /bin/bash user
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential ca-certificates curl \
+       libffi-dev libgmp-dev libncurses-dev zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl --location https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin
+
+RUN mkdir -p /workspace /workspace/yatlc/dist-newstyle /home/user/claude-config \
+    && chown user:user /workspace /workspace/yatlc/dist-newstyle /home/user/claude-config
+
+USER user
+
+RUN BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
+    BOOTSTRAP_HASKELL_GHC_VERSION=recommended \
+    BOOTSTRAP_HASKELL_CABAL_VERSION=recommended \
+    BOOTSTRAP_HASKELL_HLS_VERSION=recommended \
+    BOOTSTRAP_HASKELL_INSTALL_HLS=1 \
+    curl -sSf https://get-ghcup.haskell.org | sh
+
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+ENV CLAUDE_CONFIG_DIR=/home/user/claude-config
+ENV PATH="/home/user/.local/bin:/home/user/.ghcup/bin:/home/user/.cabal/bin:${PATH}"
+
+VOLUME /home/user/.cabal
+VOLUME ${CLAUDE_CONFIG_DIR}
+VOLUME /workspace/yatlc/dist-newstyle
+
+WORKDIR /workspace

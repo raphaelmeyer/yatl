@@ -6,6 +6,9 @@ includes:
   yatlc:
     taskfile: yatlc/yatlc.tasks.yml
     dir: yatlc
+  tools:
+    taskfile: tools/tools.tasks.yml
+    dir: tools
   poc:
     taskfile: poc/poc.tasks.yml
     dir: poc

@@ -3,10 +3,10 @@ version: "3"
 tasks:
   ci:
     run: once
-    deps:
-      - build
-      - test
-      - check
+    cmds:
+      - task: check
+      - task: build
+      - task: test
 
   build:
     run: once
