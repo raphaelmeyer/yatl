@@ -43,6 +43,27 @@ spec = do
       let result = map Location.item <$> Scanner.scan "\t\r\n { (\n \n } \r ) \n"
       result `shouldBe` Right [Token.LeftBrace, Token.LeftParen, Token.RightBrace, Token.RightParen, Token.Eof]
 
+  describe "comments" $ do
+    it "should skip a comment following a token" $ do
+      let result = map Location.item <$> Scanner.scan "{ // a comment\n}"
+      result `shouldBe` Right [Token.LeftBrace, Token.RightBrace, Token.Eof]
+
+    it "should skip a comment occupying a whole line" $ do
+      let result = map Location.item <$> Scanner.scan "{\n// a comment\n}"
+      result `shouldBe` Right [Token.LeftBrace, Token.RightBrace, Token.Eof]
+
+    it "should skip a comment on the last line without a trailing newline" $ do
+      let result = map Location.item <$> Scanner.scan "{ // a comment"
+      result `shouldBe` Right [Token.LeftBrace, Token.Eof]
+
+    it "should skip an empty comment" $ do
+      let result = map Location.item <$> Scanner.scan "{//\n}"
+      result `shouldBe` Right [Token.LeftBrace, Token.RightBrace, Token.Eof]
+
+    it "should not scan the content of a comment" $ do
+      let result = map Location.item <$> Scanner.scan "// fn foo -> @ // /\n{"
+      result `shouldBe` Right [Token.LeftBrace, Token.Eof]
+
   describe "location information" $ do
     it "should assign position 1 to the first token on a line" $ do
       let result = map Location.location <$> Scanner.scan "{"
@@ -76,6 +97,14 @@ spec = do
       let result = map Location.location <$> Scanner.scan " fn   foo "
       result `shouldBe` Right [Location.Location 1 2, Location.Location 1 7, Location.Location 1 11]
 
+    it "should record correct location after a comment" $ do
+      let result = map Location.location <$> Scanner.scan "// a comment\n {"
+      result `shouldBe` Right [Location.Location 2 2, Location.Location 2 3]
+
+    it "should record correct position after a comment on the same line" $ do
+      let result = map Location.location <$> Scanner.scan "{ // a comment\n}"
+      result `shouldBe` Right [Location.Location 1 1, Location.Location 2 1, Location.Location 2 2]
+
     it "should record correct position after identifier" $ do
       let result = map Location.location <$> Scanner.scan "  foobar ; "
       result `shouldBe` Right [Location.Location 1 3, Location.Location 1 10, Location.Location 1 12]
@@ -93,6 +122,13 @@ spec = do
       result
         `shouldBe` Left
           [ Error.ScanError "Unexpected character '@'." (Location.Location 1 6)
+          ]
+
+    it "should catch a single slash" $ do
+      let result = map Location.item <$> Scanner.scan "{ / }"
+      result
+        `shouldBe` Left
+          [ Error.ScanError "Unexpected character '/'." (Location.Location 1 3)
           ]
 
     it "should report correct line" $ do

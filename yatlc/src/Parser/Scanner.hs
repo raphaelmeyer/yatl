@@ -47,6 +47,7 @@ scanToken = do
         ')' -> simpleToken Token.RightParen
         ';' -> simpleToken Token.Semicolon
         '-' -> arrow
+        '/' -> lineComment
         ' ' -> whitespace
         '\n' -> newLine
         '\r' -> whitespace
@@ -67,6 +68,13 @@ arrow = do
   if m
     then pure (Just Token.Arrow)
     else unexpectedCharacter '-'
+
+lineComment :: Scanner (Maybe Token.Token)
+lineComment = do
+  m <- match '/'
+  if m
+    then advanceWhile (/= '\n') >> skip
+    else unexpectedCharacter '/'
 
 whitespace :: Scanner (Maybe Token.Token)
 whitespace = skip
