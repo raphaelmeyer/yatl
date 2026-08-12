@@ -41,7 +41,7 @@ RUN mkdir -p /home/user/.local/bin \
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
 ENV CLAUDE_CONFIG_DIR=/home/user/claude-config
-ENV PATH="/home/user/.local/bin:/home/user/.ghcup/bin:/home/user/.cabal/bin:${PATH}"
+ENV PATH="/home/user/.local/bin:/home/user/.ghcup/bin:/home/user/.cabal/bin:/home/user/.wasmtime/bin:${PATH}"
 
 VOLUME /home/user/.cabal
 VOLUME ${CLAUDE_CONFIG_DIR}

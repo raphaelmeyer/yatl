@@ -3,7 +3,6 @@ name:               yatlc
 version:            0.0.0.1
 
 license:            MIT
-license-file:       LICENSE
 author:             Raphael Meyer
 
 category:           Language

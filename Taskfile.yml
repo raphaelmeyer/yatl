@@ -6,6 +6,9 @@ includes:
   yatlc:
     taskfile: yatlc/yatlc.tasks.yml
     dir: yatlc
+  conformance:
+    taskfile: conformance/conformance.tasks.yml
+    dir: conformance
   tools:
     taskfile: tools/tools.tasks.yml
     dir: tools

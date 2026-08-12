@@ -1,0 +1,40 @@
+cabal-version:      3.0
+name:               conformance
+version:            0.0.0.1
+
+license:            MIT
+author:             Raphael Meyer
+
+category:           Language
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall -Wextra -Werror
+
+test-suite conformance-test
+    import:           warnings
+    main-is:          Spec.hs
+
+    build-depends:
+        base,
+        directory,
+        filepath,
+        hspec,
+        process,
+
+    build-tool-depends:
+        hspec-discover:hspec-discover
+
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    default-language: Haskell2010
+
+test-suite conformance-style
+    type:             exitcode-stdio-1.0
+    main-is:          Style.hs
+    hs-source-dirs:   tools
+    default-language: Haskell2010
+    build-depends:    base
+    build-tool-depends:
+        ormolu:ormolu,
+        hlint:hlint

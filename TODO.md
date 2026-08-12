@@ -54,30 +54,6 @@ compiler rather than its internals.
 **Annotations live in the source file**, which means the language needs
 comments before the suite can exist. That prerequisite is done.
 
-- [ ] **Pin the runtime tooling.** Decide `wasmtime` vs `wasm-tools run` for
-      executing a WASI component and capturing its stdout; add it to the dev
-      environment / CI image and record the version. `poc/` already assumes
-      `wasmtime` + `wasm-tools` and pins WASI wit at `v0.2.12`; match that.
-      If neither can be installed in CI yet, stop here and leave this whole
-      section as a blocked follow-up rather than guessing at a harness that
-      can't run.
-- [x] **Scanner: `//` line comments.** `Parser.Scanner.scanToken` dispatches
-      on `{ } ( ) ; -` plus whitespace and identifiers; `/` currently hits
-      `unexpectedCharacter`, so annotation comments would fail to scan. Add
-      `'/' -> lineComment`, matching a second `/` and skipping to end of
-      line (a lone `/` stays a scan error). New `ScannerSpec` tests: comment
-      at end of line, whole-line comment, comment on the last line with no
-      trailing newline, lone `/` is an error, and that the following line's
-      token locations are still right.
-- [ ] **The `conformance` package skeleton.** `conformance/conformance.cabal`
-      with a `conformance-test` (hspec + `process` + `directory` +
-      `filepath`) and a `conformance-style` stanza mirroring `yatlc`'s
-      (ormolu + hlint via `build-tool-depends`, `tools/Style.hs`), plus
-      `.hlint.yaml`, `.gitignore` (`dist-newstyle/`, `_build/`) and a
-      `conformance.tasks.yml` exposing `build` / `test` / `check` / `lint` /
-      `format` / `deps` in the shape `yatlc.tasks.yml` already uses. Wire it
-      into the root `Taskfile.yml` and add the folder to
-      `yatl.code-workspace`. No license file — the root `LICENSE` covers it.
 - [ ] **Annotation parser.** `conformance/test/Annotations.hs` with a pure
       `expectedLines :: Text -> [Text]` scanning `// [out]: ...` comments and
       returning one expected output line each, in source order. New

@@ -1,0 +1,77 @@
+version: "3"
+
+vars:
+  BUILD_DIR: _build
+
+tasks:
+  ci:
+    run: once
+    cmds:
+      - task: check
+      - task: test
+
+  test:
+    run: once
+    deps:
+      - deps
+    cmds:
+      - cabal test
+
+  check:
+    desc: Run all style checks (lint + format)
+    run: once
+    cmds:
+      - task: lint
+      - task: format-check
+
+  lint:
+    desc: Run hlint and report issues (non-destructive)
+    run: once
+    deps:
+      - _tools
+    cmds:
+      - cabal exec -- hlint test tools
+
+  format-check:
+    desc: Check formatting without modifying files (for CI)
+    run: once
+    deps:
+      - _tools
+    cmds:
+      - cabal exec -- ormolu --mode check $(find test tools -name '*.hs')
+
+  format:
+    desc: Format all source files in-place
+    deps:
+      - _tools
+    cmds:
+      - cabal exec -- ormolu --mode inplace $(find test tools -name '*.hs')
+
+  deps:
+    desc: Fetch the WASI wit definitions used by conformance cases
+    run: once
+    deps:
+      - _build-dir
+    dir: "{{ .BUILD_DIR }}"
+    cmds:
+      - curl -L -O https://github.com/WebAssembly/WASI/releases/download/v0.2.12/wasi-wit-0.2.12.tar.gz
+      - tar zxf wasi-wit-0.2.12.tar.gz
+      - rm -rf deps
+      - mv wasi-wit-0.2.12 deps
+    status:
+      - test -f "wasi-wit-0.2.12.tar.gz"
+      - test -f "deps/cli/cli.wit"
+
+  _build-dir:
+    internal: true
+    run: once
+    status:
+      - test -d "{{ .BUILD_DIR }}"
+    cmds:
+      - mkdir -p "{{ .BUILD_DIR }}"
+
+  _tools:
+    internal: true
+    run: once
+    cmds:
+      - cabal build conformance-style
