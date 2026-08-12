@@ -14,6 +14,10 @@ tasks:
     run: once
     deps:
       - deps
+      - :yatlc:build
+    env:
+      YATLC:
+        sh: cabal list-bin yatlc --project-dir=../yatlc
     cmds:
       - cabal test
 

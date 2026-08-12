@@ -54,29 +54,42 @@ compiler rather than its internals.
 **Annotations live in the source file**, which means the language needs
 comments before the suite can exist. That prerequisite is done.
 
-- [ ] **Annotation parser.** `conformance/test/Annotations.hs` with a pure
+- [ ] **Harness: refactor the control flow.** `conformance/test/Harness.hs`
+      exists and is exercised end to end: `Harness.runCase` locates the three
+      binaries (`$YATLC`/`$WASM_TOOLS`/`$WASMTIME`, falling back to `$PATH`),
+      gives the case a fresh `_build/<case>/` with the WASI wit `deps` linked
+      in, then runs `yatlc -b <dir>` → `wasm-tools component embed --world
+      example:foo/foo` → `wasm-tools component new` → `wasmtime run`,
+      returning a `CaseResult` (`Success`/`CompileError`/`RuntimeError`, no
+      exceptions). `HarnessSpec` runs it against `conformance/cases/hello.yatl`
+      (`fn main() -> {}`, no annotation yet) and asserts the hardcoded
+      `["foo"]`. It works, but was written for exactly one case and three
+      fixed binaries, so the control flow is more repetitive than it should
+      be long-term: the three binary lookups are a manually nested
+      `case ... of Left/Right`, the four pipeline steps
+      (compile/embed/new/run) are the same nested-Either shape again, and the
+      `wasmPath`/`embedPath`/`componentPath` construction repeats
+      `buildDir SysFP.</> name` three times. Don't fix this speculatively —
+      revisit once `[error]:` cases and the multi-case `CasesSpec` below give
+      it a second real call site, so the abstraction is shaped by an actual
+      second use rather than guessed at now.
+- [ ] **Annotation parser, wired in immediately.**
+      `conformance/test/Annotations.hs` with a pure
       `expectedLines :: Text -> [Text]` scanning `// [out]: ...` comments and
-      returning one expected output line each, in source order. New
-      `AnnotationsSpec` tests: several `[out]:` lines, none at all, ordinary
-      comments and blank lines ignored, an empty `// [out]:` meaning an empty
-      output line, and interior whitespace preserved.
-- [ ] **Harness.** `conformance/test/Harness.hs` with
-      `runCase :: Case -> IO Text` that locates the three binaries
-      (`$YATLC`/`$WASM_TOOLS`/`$WASMTIME`, falling back to `$PATH`, with a
-      clear message when missing), gives each case a fresh `_build/<case>/`
-      with the WASI wit `deps` linked in, then runs
-      `yatlc -b <dir>` → `wasm-tools component embed --world example:foo/foo`
-      → `wasm-tools component new` → `wasmtime run`, returning stdout split
-      into lines. Any step failing fails the case with that step's output
-      attached. No tests of its own — exercised by the case spec below.
-- [ ] **Cases + dynamic spec.** `conformance/cases/` starting with the
-      currently *parseable* program, `fn main -> void {}` annotated
-      `// [out]: foo` (the generator ignores the body today, so this pins the
-      hardcoded baseline). `CasesSpec` uses `runIO` to list `cases/*.yatl`
-      and generates one `it` per case, checking that it compiles, runs and
-      that its output lines match the `[out]:` annotations.
-      This is the "already works" baseline — no generator or parser changes
-      needed, it just proves the harness end to end.
+      returning one expected output line each, in source order. Add
+      `// [out]: foo` to `hello.yatl` and replace the hardcoded `["foo"]` in
+      `HarnessSpec` with `expectedLines` read from the case file, so the
+      previous step's test now derives its expectation from the annotation
+      instead of a literal — the parser is used the moment it exists. New
+      `AnnotationsSpec` tests for the scanning logic itself: several `[out]:`
+      lines, none at all, ordinary comments and blank lines ignored, an empty
+      `// [out]:` meaning an empty output line, interior whitespace preserved.
+- [ ] **Cases + dynamic spec.** Generalize `HarnessSpec` into `CasesSpec`,
+      using `runIO` to list `cases/*.yatl` and generating one `it` per case,
+      each checking that it compiles, runs, and that its output lines match
+      its `[out]:` annotations. Add a second trivial case alongside
+      `hello.yatl` to prove the generalization isn't just re-hardcoding a
+      single file.
 - [ ] **Wire into CI.** Add `conformance:ci` to the root `Taskfile.yml`'s
       `ci` task, and add `wasmtime` + `wasm-tools` (pinned versions from the
       first step) to the CI image alongside GHC. The `deps` task must fetch
@@ -133,51 +146,74 @@ reviewable commit.
       keywords tokenize, `::` tokenizes (and doesn't get eaten as two `:`
       since `:` alone isn't a token yet — decide it's a scan error on its
       own).
-- [ ] **AST: module/import/statement shape.** Replace the empty
-      `AST.Function` placeholder with: `Tree` gets `moduleName :: Text.Text`,
-      `imports :: [Text.Text]`, `functions :: [Function]`; `Function` gets
-      `name :: Text.Text` and `body :: [Statement]`; add
+
+Each of the steps below plugs its AST/grammar addition into the *real*
+compiler pipeline in the same commit — updating `hello.yatl` (or adding a
+case) and keeping the conformance suite invoked and green (or intentionally,
+explainably red where noted) — rather than growing the AST or grammar up
+front and only wiring it into `yatlc`/the conformance suite once everything
+exists. That's a deliberate departure from a purely architectural ordering:
+it surfaces contract mismatches (CLI exit codes, AST shapes the generator
+actually needs, etc.) at the step that introduces them instead of at a big
+"wire it up" step at the end.
+
+- [ ] **AST + Parser: module declaration, wired immediately.** Give `Tree` a
+      `moduleName :: Text.Text` field (it stops being a bare `newtype` over
+      `[Function]`) and parse the required leading `module <identifier>` into
+      it — leave `imports` and `Function`'s shape for the next two steps
+      rather than designing the full AST now. `Generator`/`Compiler` don't
+      need to change; they still ignore everything and emit the hardcoded
+      module. Update `conformance/cases/hello.yatl` to prepend `module main`
+      above its body, keeping the `// [out]: foo` annotation green — that's
+      what proves the new grammar is wired into the shipped compiler, not
+      just exercised by a parser unit test. New tests: missing module name,
+      missing `module` keyword entirely.
+- [ ] **AST + Parser: import declarations, wired immediately.** Add
+      `imports :: [Text.Text]` to `Tree`; parse zero or more
+      `import <identifier> ;` after the module declaration into it. Update
+      `hello.yatl` to add `import stdio;`; still green against
+      `// [out]: foo`. New tests: no imports, one import, missing `;`.
+- [ ] **AST + Parser: function name + qualified call-statement grammar.**
+      Give `Function` a `name :: Text.Text` and `body :: [Statement]`; add
       `Statement = ExpressionStatement Expr`; add
-      `Expr = Call {callNamespace :: Text.Text, callFunction :: Text.Text, callArgs :: [Expr]} | StringLiteral Text.Text`.
-      Keep it minimal — single-arg calls only, no types, no return values yet.
-      No new tests (structural change; covered by the parser tests below).
-- [ ] **Parser: module declaration.** Parse the required leading
-      `module <identifier>` and store it as `Tree`'s `moduleName`. New tests:
-      missing module name, missing `module` keyword entirely.
-- [ ] **Parser: import declarations.** Parse zero or more
-      `import <identifier> ;` after the module declaration, storing names in
-      `imports`. New tests: no imports, one import, missing `;`.
-- [ ] **Parser: function name + qualified call-statement grammar.** Thread
-      the identifier already consumed in `function` into `Function`'s `name`
-      field. Parse a function body as zero or more statements of the shape
-      `identifier "::" identifier "(" [Str] ")" ";"`. New
-      `FunctionSpec`/`Parser.StatementSpec` cases: call with no args, call
-      with one string arg, two calls in sequence, missing `::`, missing `;`,
-      missing `)`.
+      `Expr = Call {callNamespace :: Text.Text, callFunction :: Text.Text, callArgs :: [Expr]} | StringLiteral Text.Text`
+      (single-arg calls only, no types, no return values yet). Thread the
+      identifier already consumed in `function` into `name`, and parse the
+      body as zero or more `identifier "::" identifier "(" [Str] ")" ";"`
+      statements. Update `hello.yatl` to its final target body (both
+      `stdio::print` calls) — the generator still ignores it and emits the
+      old hardcoded bytes, so the annotation *stays* `// [out]: foo` for now.
+      That mismatch between what the source says and what actually runs is
+      intentional and temporary: it's what proves the full target grammar
+      round-trips through the real `yatlc`/`wasm-tools`/`wasmtime` pipeline
+      before any generator work starts, rather than only through
+      `Parser.parse` in isolation. New `FunctionSpec`/`Parser.StatementSpec`
+      cases: call with no args, call with one string arg, two calls in
+      sequence, missing `::`, missing `;`, missing `)`.
 - [ ] **Parser/Compiler: unresolved-namespace error.** If a call's namespace
       wasn't declared via `import`, raise a clear error (e.g. "stdio is not
       imported") rather than silently accepting it — this is what makes
       `import stdio;` load-bearing rather than decorative. New test: calling
-      `stdio::print(...)` without `import stdio;` produces that error.
-- [ ] **Generator: parameterize the hand-encoded module.** Without changing
-      *how* the wasm bytes are built, make `Generator.emit` walk the AST:
-      find `main`, and for each `stdio::print(StringLiteral s)` call in
-      order, emit a call to the existing wasi write import against a data
-      segment holding `s`, concatenating results in program order. New
-      golden tests: AST for the target program (`print("Hello")` then
-      `print(" World!\n")`) produces a module that prints exactly
-      `Hello World!\n`; a single-call case reduces to the current
-      byte-for-byte `example` shape (proves it's no longer hardcoded, not
-      just re-hardcoded).
-- [ ] **Compiler + conformance: wire it up.** Update
-      `conformance/cases/hello.yatl` to the exact target program above with a
-      single `// [out]: Hello World!` annotation. New test: a
-      `CompilerSpec` that runs `compile`/`compileFile` on that program and
-      checks the emitted `.wasm` bytes match the golden output from the
-      previous step. This is the point where the conformance suite goes green
-      on the real target program instead of the `foo\n` placeholder — also a
-      good point to add an `[error]:` case exercising the
-      unresolved-namespace error from two steps above.
+      `stdio::print(...)` without `import stdio;` produces that error, checked
+      at the `Compiler` level for now. A conformance-level `[error]:` case for
+      this can land once the Conformance Suite's "Compiler: render errors and
+      fail" step has landed, in whichever order the two tracks happen to run.
+- [ ] **Generator: parameterize the hand-encoded module — cut lands.**
+      Without changing *how* the wasm bytes are built, make `Generator.emit`
+      walk the AST: find `main`, and for each `stdio::print(StringLiteral s)`
+      call in order, emit a call to the existing wasi write import against a
+      data segment holding `s`, concatenating results in program order. In
+      the same commit, flip `hello.yatl`'s annotation from `// [out]: foo` to
+      `// [out]: Hello World!` — this is the point the conformance suite goes
+      green on the real target program instead of the placeholder, landing
+      together with the change that makes it true rather than as a separate
+      follow-up step. New golden tests in `CompilerSpec`: the target
+      program's AST produces a module that prints exactly `Hello World!\n`
+      and matches a captured golden `.wasm` byte-for-byte; a single-call
+      program reduces to the current byte-for-byte `example` shape (proves
+      it's derived, not just re-hardcoded). If the Conformance Suite's
+      error-rendering has landed by now, also add the `[error]:` case for the
+      unresolved-namespace error from the step above.
 - [ ] **Cut complete:** delete/replace the now-unused hardcoded parts of
       `Generator.example` and `exampleWit` that aren't derived from the AST.
       Update this TODO to move remaining generalization work (multi-arg
@@ -187,4 +223,13 @@ reviewable commit.
 
 ## TODOs
 
-- fix handling and reporting of error location in scanner after the scanner supports more variations (-, ->, !, !=, ...)
+- extract toolchain binaries from conformance test runner and only locate
+  them once
+- fix handling and reporting of error location in scanner after the scanner
+  supports more variations (-, ->, !, !=, ...)
+- managing the dependencies (`deps` in build folder). should system
+  dependencies (wasi) be copied into the build folder? is it possible to
+  reference other and multiple locations?
+- extract the compile/build steps from the conformance tests into the yatlc
+  binary. getting wasi files, invoking wasm-tools etc should be part of the
+  build process managed by yatlc.
