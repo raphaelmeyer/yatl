@@ -13,7 +13,11 @@ common warnings
 
 test-suite conformance-test
     import:           warnings
-    main-is:          Spec.hs
+    main-is:          Main.hs
+
+    other-modules:
+        Conformance,
+        Runner
 
     build-depends:
         base,
@@ -21,6 +25,8 @@ test-suite conformance-test
         filepath,
         hspec,
         process,
+        text,
+        transformers,
 
     build-tool-depends:
         hspec-discover:hspec-discover

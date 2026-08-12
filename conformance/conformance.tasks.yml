@@ -9,13 +9,23 @@ tasks:
     cmds:
       - task: check
       - task: test
+      - task: run
+
+  run:
+    run: once
+    deps:
+      - _deps
+      - :yatlc:build
+    env:
+      YATLC:
+        sh: cabal list-bin yatlc --project-dir=../yatlc
+    cmds:
+      - cabal test conformance-test
 
   test:
     run: once
-    deps:
-      - deps
     cmds:
-      - cabal test
+      - cabal test harness-test
 
   check:
     desc: Run all style checks (lint + format)
@@ -47,7 +57,7 @@ tasks:
     cmds:
       - cabal exec -- ormolu --mode inplace $(find test tools -name '*.hs')
 
-  deps:
+  _deps:
     desc: Fetch the WASI wit definitions used by conformance cases
     run: once
     deps:

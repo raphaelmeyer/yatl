@@ -23,8 +23,9 @@ tasks:
 
   ci:
     run: once
-    deps:
-      - yatlc:ci
+    cmds:
+      - task: yatlc:ci
+      - task: conformance:ci
 
   poc:
     run: once
