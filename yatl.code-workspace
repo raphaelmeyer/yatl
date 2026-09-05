@@ -7,6 +7,10 @@
     {
       "path": "yatlc",
       "name": "--- Compiler ---",
+    },
+    {
+      "path": "conformance",
+      "name": "--- Conformance ---",
     }
   ],
   "settings": {
@@ -27,7 +31,15 @@
       "editor.defaultFormatter": "redhat.vscode-yaml"
     },
     "[haskell]": {
-      "editor.inlayHints.enabled": "offUnlessPressed"
+      "editor.inlayHints.enabled": "offUnlessPressed",
+      "editor.defaultFormatter": "haskell.haskell"
     }
+  },
+  "extensions": {
+    "recommendations": [
+      "haskell.haskell",
+      "redhat.vscode-yaml",
+      "task.vscode-task"
+    ]
   }
 }

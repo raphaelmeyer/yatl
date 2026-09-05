@@ -6,6 +6,12 @@ includes:
   yatlc:
     taskfile: yatlc/yatlc.tasks.yml
     dir: yatlc
+  conformance:
+    taskfile: conformance/conformance.tasks.yml
+    dir: conformance
+  tools:
+    taskfile: tools/tools.tasks.yml
+    dir: tools
   poc:
     taskfile: poc/poc.tasks.yml
     dir: poc
@@ -17,8 +23,9 @@ tasks:
 
   ci:
     run: once
-    deps:
-      - yatlc:ci
+    cmds:
+      - task: yatlc:ci
+      - task: conformance:ci
 
   poc:
     run: once
