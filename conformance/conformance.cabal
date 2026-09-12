@@ -11,11 +11,11 @@ build-type:         Simple
 common warnings
     ghc-options: -Wall -Wextra -Werror
 
-test-suite conformance-test
-    import:           warnings
-    main-is:          Main.hs
+library harness
+    import:         warnings
 
-    other-modules:
+    exposed-modules:
+        Annotations,
         Conformance,
         Runner
 
@@ -26,14 +26,43 @@ test-suite conformance-test
         hspec,
         process,
         text,
-        transformers,
+        transformers
+
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+test-suite conformance-test
+    import:           warnings
+    main-is:          Main.hs
+
+    build-depends:
+        harness,
+        base,
+        hspec
+
+    type: exitcode-stdio-1.0
+    hs-source-dirs: app
+    default-language: Haskell2010
+
+test-suite harness-test
+    import:     warnings
+    main-is:    Spec.hs
+
+    other-modules:
+        AnnotationsSpec
+
+    build-depends:
+        base,
+        extra,
+        hspec,
+        harness
 
     build-tool-depends:
         hspec-discover:hspec-discover
 
     type: exitcode-stdio-1.0
     hs-source-dirs: test
-    default-language: Haskell2010
+    default-language:Haskell2010
 
 test-suite conformance-style
     type:             exitcode-stdio-1.0
