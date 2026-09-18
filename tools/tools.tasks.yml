@@ -1,0 +1,39 @@
+version: "3"
+
+vars:
+  INSTANCE_ID: "{{ .ROOT_DIR | sha256sum | trunc 12 }}"
+  IMAGE_NAME: "claude-cli-{{.INSTANCE_ID}}"
+  CABAL_VOLUME: "claude-cli-cabal-{{.INSTANCE_ID}}"
+  YATLC_DIST_VOLUME: "claude-cli-yatlc-dist-{{.INSTANCE_ID}}"
+  CONFIG_VOLUME: "claude-cli-config-{{.INSTANCE_ID}}"
+  WORKSPACE: '"{{ .ROOT_DIR }}":"/workspace"'
+  CABAL: '"{{ .CABAL_VOLUME }}":"/home/user/.cabal"'
+  YATLC_DIST: '"{{ .YATLC_DIST_VOLUME }}":"/workspace/yatlc/dist-newstyle"'
+  CONFIG: '"{{ .CONFIG_VOLUME }}":"/home/user/claude-config"'
+
+tasks:
+  claude:
+    interactive: true
+    ignore_error: true
+    deps:
+      - _claude-container
+    cmds:
+      - docker run -it --rm -v {{ .WORKSPACE }} -v {{ .CABAL }} -v {{ .YATLC_DIST }} -v {{ .CONFIG }} {{.IMAGE_NAME}} claude
+
+  claude-container-bash:
+    interactive: true
+    ignore_error: true
+    deps:
+      - _claude-container
+    cmds:
+      - docker run -it --rm -v {{ .WORKSPACE }} -v {{ .CABAL }} -v {{ .YATLC_DIST }} -v {{ .CONFIG }} {{.IMAGE_NAME}}
+
+  _claude-container:
+    internal: true
+    run: once
+    sources:
+      - claude-cli/Dockerfile
+    status:
+      - docker image inspect {{.IMAGE_NAME}} >/dev/null 2>&1
+    cmds:
+      - docker buildx build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) -t {{.IMAGE_NAME}} ./claude-cli

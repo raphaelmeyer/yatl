@@ -1,5 +1,5 @@
 cabal-version:      3.0
-name:               yatlc
+name:               conformance
 version:            0.0.0.1
 
 license:            MIT
@@ -11,68 +11,60 @@ build-type:         Simple
 common warnings
     ghc-options: -Wall -Wextra -Werror
 
-library
-    import:           warnings
-    exposed-modules:
-        AST.AST
-        Compiler.Compiler
-        Compiler.Error
-        Compiler.Location
-        Compiler.Options
-        Generator.Generator
-        Parser.Parser
-        Parser.Scanner
-        Parser.Token
+library harness
+    import:         warnings
 
-    -- other-modules:
-    -- other-extensions:
+    exposed-modules:
+        Annotations,
+        Conformance,
+        Runner
 
     build-depends:
-        base ^>=4.20,
-        bytestring,
+        base,
+        directory,
         filepath,
-        mtl,
+        hspec,
+        process,
         text,
+        transformers
 
     hs-source-dirs:   src
     default-language: Haskell2010
 
-executable yatlc
+test-suite conformance-test
     import:           warnings
     main-is:          Main.hs
 
     build-depends:
-        base ^>=4.20,
-        optparse-applicative,
-        text,
-        yatlc
+        harness,
+        base,
+        hspec
 
-    hs-source-dirs:   app
+    type: exitcode-stdio-1.0
+    hs-source-dirs: app
     default-language: Haskell2010
 
-test-suite yatlc-test
-    import:           warnings
-    main-is: Spec.hs
+test-suite harness-test
+    import:     warnings
+    main-is:    Spec.hs
 
     other-modules:
-        Parser.FunctionSpec
-        Parser.ModuleSpec
-        ScannerSpec
+        AnnotationsSpec
 
     build-depends:
         base,
         extra,
         hspec,
-        yatlc
+        harness
 
     build-tool-depends:
         hspec-discover:hspec-discover
 
     type: exitcode-stdio-1.0
     hs-source-dirs: test
-    default-language: Haskell2010
+    default-language:Haskell2010
 
-test-suite yatlc-style
+test-suite conformance-style
     type:             exitcode-stdio-1.0
     main-is:          Style.hs
     hs-source-dirs:   tools

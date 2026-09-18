@@ -1,19 +1,15 @@
 module Compiler.Error where
 
+import qualified Compiler.Location as Location
 import qualified Data.Text as Text
-
-data Location = Location
-  { locLine :: Int,
-    locPos :: Int
-  }
-  deriving (Eq, Show)
 
 data Error
   = ScanError
       { eMessage :: Text.Text,
-        eLocation :: Location
+        eLocation :: Location.Location
       }
   | ParseError
-      { eMessage :: Text.Text
+      { eMessage :: Text.Text,
+        eLocation :: Location.Location
       }
   deriving (Eq, Show)
