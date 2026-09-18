@@ -34,10 +34,10 @@ data Artifacts = Artifacts
 
 type CompileResult = Either Text.Text ()
 
-run :: FilePath -> IO (Either Text.Text Outcome)
-run caseDir = Except.runExceptT $ do
+run :: FilePath -> FilePath -> IO (Either Text.Text Outcome)
+run caseDir entryFile = Except.runExceptT $ do
   binaries <- locateBinaries
-  compileAndRun binaries caseDir
+  compileAndRun binaries caseDir entryFile
 
 locateBinaries :: Except.ExceptT Text.Text IO Binaries
 locateBinaries = do
@@ -51,9 +51,8 @@ locateBinaries = do
         exeWasmtime = wasmtime
       }
 
-compileAndRun :: Binaries -> FilePath -> Except.ExceptT Text.Text IO Outcome
-compileAndRun binaries testCaseDirectory = do
-  entryFile <- findEntryFile testCaseDirectory
+compileAndRun :: Binaries -> FilePath -> FilePath -> Except.ExceptT Text.Text IO Outcome
+compileAndRun binaries testCaseDirectory entryFile = do
   let basename = SysFP.takeFileName testCaseDirectory
       artifacts = createArtificatPaths basename
   Trans.lift $ freshBuildDir (artifactBuildDirectory artifacts)
@@ -74,14 +73,6 @@ createArtificatPaths basename =
           artifactEmbedPath = buildDir SysFP.</> name SysFP.<.> "embed" SysFP.<.> "wasm",
           artifactComponentPath = buildDir SysFP.</> name SysFP.<.> "component" SysFP.<.> "wasm"
         }
-
-findEntryFile :: FilePath -> Except.ExceptT Text.Text IO FilePath
-findEntryFile testCaseDirectory = do
-  entries <- Trans.lift (Directory.listDirectory testCaseDirectory)
-  case filter ((== ".yatl") . SysFP.takeExtension) entries of
-    [file] -> pure (testCaseDirectory SysFP.</> file)
-    [] -> Except.throwE (Text.pack ("no .yatl file in " ++ testCaseDirectory))
-    files -> Except.throwE (Text.pack ("expected exactly one .yatl file in " ++ testCaseDirectory ++ ", found " ++ show files))
 
 freshBuildDir :: FilePath -> IO ()
 freshBuildDir buildDir = do

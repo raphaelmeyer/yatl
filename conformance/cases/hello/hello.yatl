@@ -1,1 +1,2 @@
+// [out]: foo
 fn main() -> {}
