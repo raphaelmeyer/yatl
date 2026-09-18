@@ -54,25 +54,6 @@ compiler rather than its internals.
 **Annotations live in the source file**, which means the language needs
 comments before the suite can exist. That prerequisite is done.
 
-- [ ] **Harness: refactor the control flow.** `conformance/test/Harness.hs`
-      exists and is exercised end to end: `Harness.runCase` locates the three
-      binaries (`$YATLC`/`$WASM_TOOLS`/`$WASMTIME`, falling back to `$PATH`),
-      gives the case a fresh `_build/<case>/` with the WASI wit `deps` linked
-      in, then runs `yatlc -b <dir>` → `wasm-tools component embed --world
-      example:foo/foo` → `wasm-tools component new` → `wasmtime run`,
-      returning a `CaseResult` (`Success`/`CompileError`/`RuntimeError`, no
-      exceptions). `HarnessSpec` runs it against `conformance/cases/hello.yatl`
-      (`fn main() -> {}`, no annotation yet) and asserts the hardcoded
-      `["foo"]`. It works, but was written for exactly one case and three
-      fixed binaries, so the control flow is more repetitive than it should
-      be long-term: the three binary lookups are a manually nested
-      `case ... of Left/Right`, the four pipeline steps
-      (compile/embed/new/run) are the same nested-Either shape again, and the
-      `wasmPath`/`embedPath`/`componentPath` construction repeats
-      `buildDir SysFP.</> name` three times. Don't fix this speculatively —
-      revisit once `[error]:` cases and the multi-case `CasesSpec` below give
-      it a second real call site, so the abstraction is shaped by an actual
-      second use rather than guessed at now.
 - [ ] **Annotation parser, wired in immediately.**
       `conformance/test/Annotations.hs` with a pure
       `expectedLines :: Text -> [Text]` scanning `// [out]: ...` comments and
